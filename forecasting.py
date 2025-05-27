@@ -7,17 +7,11 @@ Original file is located at
     https://colab.research.google.com/drive/1Em5ZtOgTHnqOJRkjdxs2mm36dOuQPhlx
 """
 
-!git config --global user.email "varun.joshua@gmail.com"
-!git config --global user.name "varunjoshua"
-
-# Commented out IPython magic to ensure Python compatibility.
-!git clone https://github.com/varunjoshua/ScalerDSML-ProductSalesForecast.git
-# %cd ScalerDSML-ProductSalesForecast
 
 """### Import Libararies/ Modules"""
 
-!pip install skforecast
-!pip install prophet
+#!pip install skforecast
+#!pip install prophet
 
 import numpy as np
 import pandas as pd
@@ -43,9 +37,26 @@ pd.set_option('display.float_format', '{:,.2f}'.format)
 import logging
 logging.getLogger('prophet').setLevel(logging.WARNING)
 logging.getLogger('cmdstanpy').disabled = True
+import os
+import urllib.request
 
-!gdown https://raw.githubusercontent.com/varunjoshua/ScalerDSML-ProductSalesForecast/main/data/ts_co.csv
+# Download the dataset if it doesn't exist
 
+def download_ts_co():
+    url = "https://raw.githubusercontent.com/varunjoshua/ScalerDSML-ProductSalesForecast/main/data/ts_co.csv"
+    filename = "ts_co.csv"
+
+    if not os.path.exists(filename):
+        print(f"Downloading {filename}...")
+        urllib.request.urlretrieve(url, filename)
+        print("Download complete.")
+    else:
+        print(f"{filename} already exists.")
+
+download_ts_co()
+
+
+# Load the dataset
 ts = pd.read_csv('ts_co.csv')
 ts.head()
 

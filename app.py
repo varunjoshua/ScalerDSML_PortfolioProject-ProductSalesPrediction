@@ -7,11 +7,18 @@ Original file is located at
     https://colab.research.google.com/drive/1gLSEP3wRgJqndJgxrnICljluRL07H7-0
 """
 
-!pip install streamlit
-
 import streamlit as st
 import pandas as pd
 import datetime
+import sys
+import os
+
+st.set_page_config(page_title="Sales Forecasting App", layout="centered")
+st.title("📈 Sales Forecasting App")
+
+#st.write("Python executable in use:", sys.executable)
+#st.write("Python path:", sys.path)
+
 
 # Import all functions and model parameters from company_forecasting.py
 from forecasting import (
@@ -20,8 +27,7 @@ from forecasting import (
     plot_model_forecast, model_params
 )
 
-st.set_page_config(page_title="Sales Forecasting App", layout="centered")
-st.title("📈 Sales Forecasting App")
+
 
 # --- Step 1: Select entity and model ---
 entity = st.selectbox("Select Entity", ["Company", "Region 1", "Region 2", "Region 3", "Region 4"])
