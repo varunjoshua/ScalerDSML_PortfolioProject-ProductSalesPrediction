@@ -42,23 +42,31 @@ import urllib.request
 
 # Download the dataset if it doesn't exist
 
-def download_ts_co():
-    url = "https://raw.githubusercontent.com/varunjoshua/ScalerDSML-ProductSalesForecast/main/data/ts_co.csv"
-    filename = "ts_co.csv"
+def download_entity_data(entity: str):
+    """
+    Download training and inference data for the given entity (Company or Region).
+    Returns:
+        ts_data: Time series training data (with 'Sales' and exogenous features)
+        exog_data: Exogenous inference data (61 rows: June–July 2019)
+    """
+    base_url_train = "https://raw.githubusercontent.com/varunjoshua/ScalerDSML-ProductSalesForecast/refs/heads/main/data/"
+    base_url_inf = "https://raw.githubusercontent.com/varunjoshua/ScalerDSML-ProductSalesForecast/refs/heads/main/data/"
 
-    if not os.path.exists(filename):
-        print(f"Downloading {filename}...")
-        urllib.request.urlretrieve(url, filename)
-        print("Download complete.")
-    else:
-        print(f"{filename} already exists.")
+    entity_map = {
+        "Company": ("ts_co.csv", "inf_all.csv"),
+        "Region 1": ("ts_r1.csv", "inf_r1.csv"),
+        "Region 2": ("ts_r2.csv", "inf_r2.csv"),
+        "Region 3": ("ts_r3.csv", "inf_r3.csv"),
+        "Region 4": ("ts_r4.csv", "inf_r4.csv"),
+    }
 
-download_ts_co()
+    train_file, inf_file = entity_map[entity]
+    
+    ts_data = pd.read_csv(base_url_train + train_file, parse_dates=[0], index_col=0)
+    exog_data = pd.read_csv(base_url_inf + inf_file, parse_dates=[0], index_col=0)
 
+    return ts_data, exog_data
 
-# Load the dataset
-ts = pd.read_csv('ts_co.csv')
-ts.head()
 
 """# **Pre-processing functions**
 
