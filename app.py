@@ -18,7 +18,7 @@ st.title("📈 Sales Forecasting App")
 from forecasting import (
     recursive_forecast, arima_forecast, sarimax_forecast, prophet_forecast,
     prophet_data_formatter, plot_model_forecast, model_params,
-    download_entity_data, training_data_processor
+    download_entity_data, training_data_processor, model_mapes
 )
 
 # --- Step 1: User Input ---
@@ -41,7 +41,6 @@ if st.button("Run Forecast"):
         exog_pred = exog_data.head(m_steps)
         model_flag = 'lr' if model_choice == "Linear Regression" else 'xgb'
         forecast = recursive_forecast(ts_proc, exog_pred, model=model_flag, target_col=target_choice)
-
 
     elif model_choice == "ARIMA":
         forecast = arima_forecast(
@@ -74,6 +73,23 @@ if st.button("Run Forecast"):
 
     # --- Step 4: Plot Forecast ---
     plot_model_forecast(ts_data.copy(), forecast)
+
+    # --- Step 4.1: Calculate and Display MAPE ---
+    # Display MAPE message based on selections
+    key = (entity, target_choice, model_choice)
+    if target_choice == "Sales":
+        mape_value = model_mapes.get(key)
+        if mape_value:
+            st.info(f" Test MAPE for {model_choice} model on {entity} {target_choice}: {mape_value}")
+        else:
+            st.info("MAPE not available for this selection.")
+    elif target_choice == "Orders":
+        mape_sales_key = (entity, "Sales", model_choice)
+        mape_value = model_mapes.get(mape_sales_key)
+        if mape_value:
+            st.info(f"Orders forecasts are untested. Model had a MAPE of {mape_value} on Sales for this segment.")
+        else:
+            st.info("Orders forecasts are untested. No Sales MAPE is available for this segment/model.")
 
     # --- Step 5: Show Forecast Table and Download Option ---
     st.dataframe(forecast)  # Show the forecast table
