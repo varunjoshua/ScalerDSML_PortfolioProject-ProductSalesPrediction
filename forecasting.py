@@ -232,6 +232,46 @@ model_params = {
 
 print(model_params)
 
+"""# **Model MAPEs**"""
+# Model MAPEs for each entity and model type
+
+model_mapes = {
+    # Linear Regression (no exogenous)
+    ("Company", "Sales", "Linear Regression"): "10.8%",
+    ("Region 1", "Sales", "Linear Regression"): "14.4%",
+    ("Region 2", "Sales", "Linear Regression"): "12.4%",
+    ("Region 3", "Sales", "Linear Regression"): "15.1%",
+    ("Region 4", "Sales", "Linear Regression"): "13.8%",
+
+    # XGBoost (no exogenous)
+    ("Company", "Sales", "XGBoost"): "12.8%",
+    ("Region 1", "Sales", "XGBoost"): "12.8%",
+    ("Region 2", "Sales", "XGBoost"): "10.1%",
+    ("Region 3", "Sales", "XGBoost"): "11.5%",
+    ("Region 4", "Sales", "XGBoost"): "11.7%",
+
+    # ARIMA
+    ("Company", "Sales", "ARIMA"): "14.36%",
+    ("Region 1", "Sales", "ARIMA"): "15.90%",
+    ("Region 2", "Sales", "ARIMA"): "14.26%",
+    ("Region 3", "Sales", "ARIMA"): "15.78%",
+    ("Region 4", "Sales", "ARIMA"): "15.85%",
+
+    # SARIMAX
+    ("Company", "Sales", "SARIMAX"): "11.47%",
+    ("Region 1", "Sales", "SARIMAX"): "11.97%",
+    ("Region 2", "Sales", "SARIMAX"): "9.88%",
+    ("Region 3", "Sales", "SARIMAX"): "11.90%",
+    ("Region 4", "Sales", "SARIMAX"): "12.78%",
+
+    # Prophet
+    ("Company", "Sales", "Prophet"): "10.12%",
+    ("Region 1", "Sales", "Prophet"): "11.16%",
+    ("Region 2", "Sales", "Prophet"): "8.83%",
+    ("Region 3", "Sales", "Prophet"): "11.87%",
+    ("Region 4", "Sales", "Prophet"): "12.78%",
+}
+
 """# **Recursive Linear Regression Forecasting**"""
 
 #Function performs recursive forecasting using Linear Regression or XGBoost.
