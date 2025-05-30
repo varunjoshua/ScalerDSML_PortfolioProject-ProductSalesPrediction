@@ -41,14 +41,15 @@ import os
 import urllib.request
 
 # Download the dataset if it doesn't exist
-
-def download_entity_data(entity: str):
-    """
+"""
     Download training and inference data for the given entity (Company or Region).
     Returns:
         ts_data: Time series training data (with 'Sales' and exogenous features)
         exog_data: Exogenous inference data (61 rows: June–July 2019)
     """
+
+def download_entity_data(entity: str):
+    
     base_url_train = "https://raw.githubusercontent.com/varunjoshua/ScalerDSML-ProductSalesForecast/refs/heads/main/data/"
     base_url_inf = "https://raw.githubusercontent.com/varunjoshua/ScalerDSML-ProductSalesForecast/refs/heads/main/data/"
 
@@ -70,8 +71,47 @@ def download_entity_data(entity: str):
 
 """# **Pre-processing functions**
 
+
 ## **Function to process data for Regression**
 """
+
+#Processes training data for model training.
+
+    #Parameters:
+    #- ts_data (pd.DataFrame): DataFrame with datetime index and columns: 'Holiday', 'Discount', 'Discounted Stores', 'Orders', 'Sales'
+    #- target_col (str): Target column to forecast, either 'Sales' or 'Orders'
+
+    #Returns:
+    #- ts_processed (pd.DataFrame): Processed DataFrame with:
+        #- 'target' column
+        #- required features for modeling
+
+def training_data_processor(ts_data: pd.DataFrame, target_col: str = "Sales"):
+    
+    assert target_col in ["Sales", "Orders"], "target_col must be 'Sales' or 'Orders'"
+
+    df = ts_data.copy()
+
+    # Generate time-based features
+    df['Day Count'] = (df.index - df.index.min()).days
+    df['Weekend'] = df.index.weekday.isin([5, 6]).astype(int)
+    df['Month_sine'] = np.sin(2 * np.pi * df.index.month / 12)
+    df['Month_cosine'] = np.cos(2 * np.pi * df.index.month / 12)
+    df['Day of Week_sine'] = np.sin(2 * np.pi * df.index.weekday / 7)
+    df['Day of Week_cosine'] = np.cos(2 * np.pi * df.index.weekday / 7)
+
+    df = df.rename(columns={target_col: "target"})
+
+    # Select relevant columns
+    features = [
+        "target", "Holiday", "Discounted Stores", "Day Count", "Weekend",
+        "Month_sine", "Month_cosine", "Day of Week_sine", "Day of Week_cosine"
+    ]
+    df = df[features]
+
+    return df
+
+
 
 # Function to tranform and process the inference data given
   # The test data provided is ungrouped with records of all stores for each day
@@ -79,8 +119,6 @@ def download_entity_data(entity: str):
   # The function will group and aggregate the data for Company and Regions : R1, R2, R3, R4
 
 def inference_data_processor(data):
-    import pandas as pd
-    import numpy as np
 
     # Step 1: Convert 'Date' to datetime and add 'Discounted_Flag'
     data['Date'] = pd.to_datetime(data['Date'])
@@ -155,8 +193,11 @@ def prophet_data_formatter(data, is_inference=False):
         df['y'] = data['Sales']
 
     df['ds'] = pd.to_datetime(data['Date'])
-    exog = data.drop(['Date'] + ([] if is_inference else ['Sales']), axis=1)
+    exog_cols = ['Holiday', 'Discounted Stores']
+    exog = data[exog_cols]
+    
     df = pd.concat([df, exog.reset_index(drop=True)], axis=1)
+    
     return df
 
 """# **Model Params**"""
@@ -304,74 +345,30 @@ def sarimax_forecast(df_train, m_steps, exog_train, exog_pred,
 
 """# **Prophet Forecasting**"""
 
-def prophet_forecast(ts_data, test_size, m_steps, exog, exog_pred):
+def prophet_forecast(ts_data, m_steps, exog_pred):
+    import warnings
     warnings.filterwarnings("ignore")
 
-    # Step 1: Creating dataframe for Prophet
-    df = ts_data.reset_index()
-    df.columns = ['ds', 'y']
-    df = pd.concat([df, exog.reset_index(drop=True)], axis=1)
+    # ts_data contains: ['ds', 'y', 'Holiday', 'Discounted Stores']
+    # exog_pred contains: ['ds', 'Holiday', 'Discounted Stores'] for m_steps days
 
-    # Split into train and test
-    train_df = df[:-test_size]
-    test_df = df[-test_size:]
-
-    # Step 2: Fit Prophet Model
-    model = Prophet(yearly_seasonality=True, weekly_seasonality=True, changepoint_prior_scale=1.25, seasonality_mode='additive')
+    # Step 1: Fit Prophet model on full historical data
+    model = Prophet(
+        yearly_seasonality=True,
+        weekly_seasonality=True,
+        changepoint_prior_scale=1.25,
+        seasonality_mode='additive'
+    )
     model.add_regressor('Holiday')
     model.add_regressor('Discounted Stores')
     model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
-    #model.add_seasonality(name='14day', period=14, fourier_order=5)
-    model.fit(train_df)
 
-    # Step 3: Create future dataframe for test
-    future_test = test_df[['ds', 'Holiday', 'Discounted Stores']]
-    forecast_test = model.predict(future_test)
+    model.fit(ts_data)
 
-    # Compute MAPE
-    test_mape = mape(test_df['y'], forecast_test['yhat'])
-    print(f"\nProphet MAPE on test split: {test_mape:.4f}")
+    # Step 2: Forecast m future steps using exog_pred
+    forecast = model.predict(exog_pred)
 
-    # Step 4: Plot Test Prediction vs Actual
-    plt.figure(figsize=(10, 4))
-    plt.plot(test_df['ds'], test_df['y'], label='Actual Test Data')
-    plt.plot(test_df['ds'], forecast_test['yhat'], label='Test Prediction', linestyle='--')
-    plt.title('Prophet Forecast vs Actual on Test Set')
-    plt.xticks(rotation=45)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-    # Step 5: Forecast Future m Steps using full data
-    full_df = df.copy()
-    model_full = Prophet(yearly_seasonality=True, weekly_seasonality=True, changepoint_prior_scale=1.25, seasonality_mode='additive')
-    model_full.add_regressor('Holiday')
-    model_full.add_regressor('Discounted Stores')
-    model_full.add_seasonality(name='monthly', period=30.5, fourier_order=5)
-    #model_full.add_seasonality(name='14day', period=14, fourier_order=5)
-    model_full.fit(full_df)
-
-    # Prepare future df (including exog_pred)
-    future_forecast = pd.concat([
-        full_df[['ds', 'Holiday', 'Discounted Stores']],
-        exog_pred.reset_index(drop=True)
-    ], axis=0).tail(m_steps)
-
-    future_dates = pd.date_range(start=ts_data.index[-1] + pd.Timedelta(days=1), periods=m_steps, freq='D')
-    future_forecast['ds'] = future_dates
-    forecast_future = model_full.predict(future_forecast)
-
-    # Step 6: Plot Full Forecast
-    plt.figure(figsize=(10, 4))
-    plt.plot(ts_data.index[-100:], ts_data[-100:], label='Last 100 Data Points')
-    plt.plot(future_dates, forecast_future['yhat'], label='Forecast from Full Data', linestyle='--')
-    plt.title('Prophet Forecast for the Next m Steps')
-    plt.xticks(rotation=45)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-    return forecast_future[['ds', 'yhat']]
+    return forecast[['ds', 'yhat']]
 
 """# **Plot Function**"""
 

@@ -17,14 +17,17 @@ st.title("📈 Sales Forecasting App")
 
 from forecasting import (
     recursive_forecast, arima_forecast, sarimax_forecast, prophet_forecast,
-    inference_data_processor, inference_exog_processor, prophet_data_formatter,
-    plot_model_forecast, model_params, download_entity_data
+    prophet_data_formatter, plot_model_forecast, model_params,
+    download_entity_data, training_data_processor
 )
 
 # --- Step 1: User Input ---
+
 entity = st.selectbox("Select Region", ["Company", "Region 1", "Region 2", "Region 3", "Region 4"])
-model_choice = st.selectbox("Select Forecasting Model", ["Linear Regression", "ARIMA", "SARIMAX", "Prophet"])
+target_choice = st.selectbox("Select Forecast Target", ["Sales", "Orders"])
+model_choice = st.selectbox("Select Forecasting Model", ["Linear Regression", "XGBoost", "ARIMA", "SARIMAX", "Prophet"])
 m_steps = st.slider("Select Forecast Horizon (in days)", min_value=7, max_value=60, value=30, step=1)
+
 
 # --- Step 2: Load Entity-Specific Data ---
 ts_data, exog_data = download_entity_data(entity)
@@ -33,28 +36,41 @@ ts_data, exog_data = download_entity_data(entity)
 if st.button("Run Forecast"):
     test_size = m_steps  # Forecast horizon
 
-    if model_choice == "Linear Regression":
-        # Use all exogenous features for regression
-        ts_proc, exog_proc, exog_pred = inference_data_processor(ts_data.copy(), m_steps)
-        forecast = recursive_forecast(ts_proc, test_size, m_steps, exog_proc, exog_pred)
+    if model_choice in ["Linear Regression", "XGBoost"]:
+        ts_proc = training_data_processor(ts_data.copy(), target_col=target_choice)
+        exog_pred = exog_data.head(m_steps)
+        model_flag = 'lr' if model_choice == "Linear Regression" else 'xgb'
+        forecast = recursive_forecast(ts_proc, exog_pred, model=model_flag, target_col=target_choice)
+
 
     elif model_choice == "ARIMA":
-        forecast = arima_forecast(ts_data.copy(), test_size, m_steps, model_params[entity]['arima_order'])
-
+        forecast = arima_forecast(
+            ts_data.copy(), 
+            m_steps, 
+            model_params[entity]['arima_order'], 
+            target_col=target_choice
+            )
+        
     elif model_choice == "SARIMAX":
-        # Only 'Holiday' and 'Discounted Stores' are required for SARIMAX
-        sarimax_exog_cols = ["Holiday", "Discounted Stores"]
-        exog_proc, exog_pred = inference_exog_processor(exog_data[sarimax_exog_cols].copy(), m_steps)
+        ts_proc = training_data_processor(ts_data.copy(), target_col=target_choice)
+        exog_train = ts_proc[["Holiday", "Discounted Stores"]]
+        exog_pred = exog_data[["Holiday", "Discounted Stores"]].head(m_steps)
         forecast = sarimax_forecast(
-            ts_data.copy(), test_size, m_steps, exog_proc, exog_pred,
-            model_params[entity]['sarimax_order'], model_params[entity]['seasonal_order']
-        )
+            ts_proc,
+            m_steps,
+            exog_train,
+            exog_pred,
+            model_params[entity]['sarimax_order'],
+            model_params[entity]['seasonal_order'],
+            target_col=target_choice
+            )
+
 
     elif model_choice == "Prophet":
-        # Prophet also only uses 'Holiday' and 'Discounted Stores'
         prophet_exog_cols = ["Holiday", "Discounted Stores"]
-        df_prophet, exog_pred = prophet_data_formatter(ts_data.copy(), exog_data[prophet_exog_cols].copy(), m_steps)
-        forecast = prophet_forecast(df_prophet, test_size, m_steps, exog_pred)
+        df_prophet = prophet_data_formatter(ts_data.copy(), is_inference=False)
+        exog_pred = prophet_data_formatter(exog_data.head(m_steps), is_inference=True)
+        forecast = prophet_forecast(df_prophet, m_steps, exog_pred)
 
     # --- Step 4: Plot Forecast ---
     plot_model_forecast(ts_data.copy(), forecast)
