@@ -74,5 +74,12 @@ if st.button("Run Forecast"):
 
     # --- Step 4: Plot Forecast ---
     plot_model_forecast(ts_data.copy(), forecast)
+
+    # --- Step 5: Show Forecast Table and Download Option ---
+    st.dataframe(forecast)  # Show the forecast table
+
+    csv = forecast.to_csv().encode('utf-8')
+    st.download_button("Download Forecast as CSV", data=csv, file_name="forecast.csv", mime="text/csv")
+
     st.success("Forecasting Complete ✅")
 
