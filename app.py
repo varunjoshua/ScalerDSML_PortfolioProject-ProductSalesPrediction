@@ -69,10 +69,12 @@ if st.button("Run Forecast"):
         prophet_exog_cols = ["Holiday", "Discounted Stores"]
         df_prophet = prophet_data_formatter(ts_data.copy(), is_inference=False)
         exog_pred = prophet_data_formatter(exog_data.head(m_steps), is_inference=True)
-        forecast = prophet_forecast(df_prophet, m_steps, exog_pred)
+        forecast = prophet_forecast(df_prophet, m_steps, exog_pred, target_col=target_choice)  # Pass target_col
 
     # --- Step 4: Plot Forecast ---
-    plot_model_forecast(ts_data.copy(), forecast)
+    plot_model_forecast(
+        ts_data.copy(), forecast, model_name=model_choice, inf_label=entity, target_col=target_choice
+    )
 
     # --- Step 4.1: Calculate and Display MAPE ---
     # Display MAPE message based on selections

@@ -40,7 +40,7 @@ logging.getLogger('cmdstanpy').disabled = True
 import os
 import urllib.request
 
-# Download the dataset if it doesn't exist
+# Downloading data
 """
     Download training and inference data for the given entity (Company or Region).
     Returns:
@@ -186,8 +186,10 @@ def inference_exog_processor(data):
 """## **Function to process data for Prophet**"""
 
 def prophet_data_formatter(data, is_inference=False):
-
     df = pd.DataFrame()
+    data = data.copy()
+    data = data.reset_index()
+    data.rename(columns={data.columns[0]: 'Date'}, inplace=True)
 
     if not is_inference:
         df['y'] = data['Sales']
@@ -195,9 +197,7 @@ def prophet_data_formatter(data, is_inference=False):
     df['ds'] = pd.to_datetime(data['Date'])
     exog_cols = ['Holiday', 'Discounted Stores']
     exog = data[exog_cols]
-    
     df = pd.concat([df, exog.reset_index(drop=True)], axis=1)
-    
     return df
 
 """# **Model Params**"""
@@ -293,9 +293,10 @@ def recursive_forecast(df_train, df_inference, model='lr', target_col='Sales'):
     df_train.index.freq = 'D'
     df_inference.index.freq = 'D'
 
-    y_train = df_train[target_col]
-    X_train = df_train.drop(columns=[target_col])
-    X_inference = df_inference.drop(columns=[target_col]) if target_col in df_inference.columns else df_inference # if inference used for testing
+    # Always use 'target' as the column after processing
+    y_train = df_train['target']
+    X_train = df_train.drop(columns=['target'])
+    X_inference = df_inference.drop(columns=['target']) if 'target' in df_inference.columns else df_inference
 
     max_lag = 31
     window_features = RollingFeatures(
@@ -321,7 +322,7 @@ def recursive_forecast(df_train, df_inference, model='lr', target_col='Sales'):
     y_pred = forecaster.predict(steps=len(df_inference), exog=X_inference, last_window=y_train[-max_lag:])
 
     df_forecast = df_inference.copy()
-    df_forecast['Sales'] = y_pred.values
+    df_forecast[target_col] = y_pred.values  # Use target_col instead of 'Sales'
 
     return df_forecast
 
@@ -379,13 +380,13 @@ def sarimax_forecast(df_train, m_steps, exog_train, exog_pred,
 
     # Prepare output DataFrame
     future_index = pd.date_range(start=df_train.index[-1] + pd.Timedelta(days=1), periods=m_steps, freq='D')
-    df_forecast = pd.DataFrame({target_col: forecast}, index=future_index)
+    df_forecast = pd.DataFrame({target_col: forecast}, index=future_index)  # Use target_col
 
     return df_forecast
 
 """# **Prophet Forecasting**"""
 
-def prophet_forecast(ts_data, m_steps, exog_pred):
+def prophet_forecast(ts_data, m_steps, exog_pred, target_col='Sales'):
     import warnings
     warnings.filterwarnings("ignore")
 
@@ -408,7 +409,11 @@ def prophet_forecast(ts_data, m_steps, exog_pred):
     # Step 2: Forecast m future steps using exog_pred
     forecast = model.predict(exog_pred)
 
-    return forecast[['ds', 'yhat']]
+    # Return DataFrame with 'Date' as index and target_col as column name
+    df_forecast = forecast[['ds', 'yhat']].rename(columns={'ds': 'Date', 'yhat': target_col})
+    df_forecast = df_forecast.set_index('Date')
+
+    return df_forecast
 
 """# **Plot Function**"""
 
@@ -420,22 +425,22 @@ def prophet_forecast(ts_data, m_steps, exog_pred):
     - df_forecast: DataFrame with 'Sales' and datetime index (forecasted values)
     - model_name: Name of the forecasting model (str)
     - inf_label: Optional label for the plot (e.g., 'Company' or 'Region')
+    - target_col: Target column to plot (default='Sales')
     """
 
-def plot_model_forecast(df_train, df_forecast, model_name, inf_label=''):
-
-
+def plot_model_forecast(df_train, df_forecast, model_name, inf_label='', target_col='Sales'):
+    # Plot historical and forecasted values for the specified target_col ("Sales" or "Orders")
     fig, ax = plt.subplots(figsize=(14, 5))
 
     # Historical data (last 100 days)
-    ax.plot(df_train.index[-100:], df_train['Sales'][-100:], label='Historical Sales', color='black')
+    ax.plot(df_train.index[-100:], df_train[target_col][-100:], label=f'Historical {target_col}', color='black')
 
     # Forecast
-    ax.plot(df_forecast.index, df_forecast['Sales'], linestyle='--', label=f'Forecast ({model_name})', color='blue')
+    ax.plot(df_forecast.index, df_forecast[target_col], linestyle='--', label=f'Forecast ({model_name})', color='blue')
 
-    ax.set_title(f"Forecasted Sales for {inf_label} ({model_name})")
+    ax.set_title(f"Forecasted {target_col} for {inf_label} ({model_name})")
     ax.set_xlabel("Date")
-    ax.set_ylabel("Sales")
+    ax.set_ylabel(target_col)
     ax.legend()
     ax.grid(True)
     plt.xticks(rotation=45)
