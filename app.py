@@ -18,23 +18,28 @@ st.title("📈 Sales Forecasting App")
 from forecasting import (
     recursive_forecast, arima_forecast, sarimax_forecast, prophet_forecast,
     prophet_data_formatter, plot_model_forecast, model_params,
-    download_entity_data, training_data_processor, model_mapes
+    download_entity_data, training_data_processor, model_mapes, prophet_mapes
 )
 
-# --- Step 1: User Input ---
+# Import Prophet Forecast data
+prophet_sales = pd.read_csv("https://raw.githubusercontent.com/varunjoshua/ScalerDSML-ProductSalesForecast/refs/heads/main/data/prophet_forecasts_sales.csv")
+prophet_orders = pd.read_csv("https://raw.githubusercontent.com/varunjoshua/ScalerDSML-ProductSalesForecast/refs/heads/main/data/prophet_forecasts_orders.csv")
+
+
+# Step 1: User Input
 
 entity = st.selectbox("Select Region", ["Company", "Region 1", "Region 2", "Region 3", "Region 4"])
 target_choice = st.selectbox("Select Forecast Target", ["Sales", "Orders"])
 model_choice = st.selectbox("Select Forecasting Model", ["Linear Regression", "XGBoost", "ARIMA", "SARIMAX", "Prophet"])
-m_steps = st.slider("Select Forecast Horizon (in days)", min_value=7, max_value=60, value=30, step=1)
+m_steps = st.slider("Select Forecast Horizon (in days)", min_value=7, max_value=61, value=30, step=1)
 
 
-# --- Step 2: Load Entity-Specific Data ---
+#  Step 2: Load Entity-Specific Data 
 ts_data, exog_data = download_entity_data(entity)
 
-# --- Step 3: Run Forecast ---
+#  Step 3: Run Forecast 
 if st.button("Run Forecast"):
-    test_size = m_steps  # Forecast horizon
+    test_size = m_steps  
 
     if model_choice in ["Linear Regression", "XGBoost"]:
         ts_proc = training_data_processor(ts_data.copy(), target_col=target_choice)
@@ -66,32 +71,59 @@ if st.button("Run Forecast"):
 
 
     elif model_choice == "Prophet":
-        prophet_exog_cols = ["Holiday", "Discounted Stores"]
-        df_prophet = prophet_data_formatter(ts_data.copy(), is_inference=False)
-        exog_pred = prophet_data_formatter(exog_data.head(m_steps), is_inference=True)
-        forecast = prophet_forecast(df_prophet, m_steps, exog_pred, target_col=target_choice)  # Pass target_col
+        # Select the correct dataframe and column based on user input
+        if target_choice == "Sales":
+            df = prophet_sales
+            col_name = f"{entity}_Sales"
+        else:
+            df = prophet_orders
+            col_name = f"{entity}_Orders"
 
-    # --- Step 4: Plot Forecast ---
-    plot_model_forecast(
+        # Slice the relevant forecast for the selected horizon
+        forecast = df.loc[:m_steps-1, ["Date", col_name]].copy()
+        forecast = forecast.rename(columns={col_name: target_choice})
+        forecast["Date"] = pd.to_datetime(forecast["Date"])
+        forecast = forecast.set_index("Date")
+        
+    #  Step 4: Plot Forecast 
+    fig = plot_model_forecast(
         ts_data.copy(), forecast, model_name=model_choice, inf_label=entity, target_col=target_choice
-    )
+        )
+    st.pyplot(fig)
 
-    # --- Step 4.1: Calculate and Display MAPE ---
-    # Display MAPE message based on selections
-    key = (entity, target_choice, model_choice)
-    if target_choice == "Sales":
-        mape_value = model_mapes.get(key)
-        if mape_value:
-            st.info(f" Test MAPE for {model_choice} model on {entity} {target_choice}: {mape_value}")
-        else:
-            st.info("MAPE not available for this selection.")
-    elif target_choice == "Orders":
-        mape_sales_key = (entity, "Sales", model_choice)
-        mape_value = model_mapes.get(mape_sales_key)
-        if mape_value:
-            st.info(f"Orders forecasts are untested. Model had a MAPE of {mape_value} on Sales for this segment.")
-        else:
-            st.info("Orders forecasts are untested. No Sales MAPE is available for this segment/model.")
+    #  Step 4.1: Display pre-computed MAPE
+
+    # MAPEs for Prophet
+    if model_choice == "Prophet":
+        entity_key = entity
+        if target_choice == "Sales":
+            mape = prophet_mapes.get(entity_key, {}).get('sales_mape')
+            if mape is not None:
+                st.info(f"Prophet Test MAPE for {entity} Sales: {mape:.2%}")
+            else:
+                st.info("MAPE not available for this selection.")
+        elif target_choice == "Orders":
+            mape = prophet_mapes.get(entity_key, {}).get('orders_mape')
+            if mape is not None:
+                st.info(f"Prophet Test MAPE for {entity} Orders: {mape:.2%}")
+            else:
+                st.info("MAPE not available for this selection.")
+    else:
+        # MAPEs for other models
+        key = (entity, target_choice, model_choice)
+        if target_choice == "Sales":
+            mape_value = model_mapes.get(key)
+            if mape_value:
+                st.info(f"Test MAPE for {model_choice} model on {entity} {target_choice}: {mape_value}")
+            else:
+                st.info("MAPE not available for this selection.")
+        elif target_choice == "Orders":
+            mape_sales_key = (entity, "Sales", model_choice)
+            mape_value = model_mapes.get(mape_sales_key)
+            if mape_value:
+                st.info(f"Orders forecasts are untested. Model had a MAPE of {mape_value} on Sales for this segment.")
+            else:
+                st.info("Orders forecasts are untested. No Sales MAPE is available for this segment/model.")
 
     # --- Step 5: Show Forecast Table and Download Option ---
     st.dataframe(forecast)  # Show the forecast table

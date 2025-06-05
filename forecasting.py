@@ -45,7 +45,7 @@ import urllib.request
     Download training and inference data for the given entity (Company or Region).
     Returns:
         ts_data: Time series training data (with 'Sales' and exogenous features)
-        exog_data: Exogenous inference data (61 rows: June–July 2019)
+        exog_data: Exogenous inference data 
     """
 
 def download_entity_data(entity: str):
@@ -92,7 +92,7 @@ def training_data_processor(ts_data: pd.DataFrame, target_col: str = "Sales"):
 
     df = ts_data.copy()
 
-    # Generate time-based features
+    # Create time-based features
     df['Day Count'] = (df.index - df.index.min()).days
     df['Weekend'] = df.index.weekday.isin([5, 6]).astype(int)
     df['Month_sine'] = np.sin(2 * np.pi * df.index.month / 12)
@@ -271,6 +271,13 @@ model_mapes = {
     ("Region 3", "Sales", "Prophet"): "11.87%",
     ("Region 4", "Sales", "Prophet"): "12.78%",
 }
+
+prophet_mapes = {'Company': {'sales_mape': 0.1021, 'orders_mape': 0.1627},
+ 'Region 1': {'sales_mape': 0.1083, 'orders_mape': 0.175},
+ 'Region 2': {'sales_mape': 0.0872, 'orders_mape': 0.1361},
+ 'Region 3': {'sales_mape': 0.1185, 'orders_mape': 0.1578},
+ 'Region 4': {'sales_mape': 0.1302, 'orders_mape': 0.1876}}
+
 
 """# **Recursive Linear Regression Forecasting**"""
 
