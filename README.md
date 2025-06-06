@@ -1,5 +1,3 @@
-# ScalerDSML_PortfolioProject-ProductSalesPrediction
-
 # Scaler DSML Product Sales Forecasting
 
 This repository contains a comprehensive solution for multi-model, multi-entity sales and orders forecasting, built as part of a Data Science & Machine Learning (DSML) project for Scaler. It features an interactive Streamlit app, robust forecasting pipelines, and a detailed analysis of sales data across a company and its regions.
