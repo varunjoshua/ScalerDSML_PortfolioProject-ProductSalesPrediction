@@ -1,6 +1,6 @@
 # Scaler DSML Product Sales Forecasting
 
-This repository contains a comprehensive solution for multi-model, multi-entity sales and orders forecasting, built as part of a Data Science & Machine Learning (DSML) project for Scaler. It features an interactive Streamlit app, robust forecasting pipelines, and a detailed analysis of sales data across a company and its regions.
+This repository is an attempt to build a multi-model, multi-entity sales and orders forecasting, built as part of a Data Science & Machine Learning (DSML) project for Scaler. It features an interactive Streamlit app, forecasting pipelines, and an analysis of sales data across a company and its regions.
 
 ---
 
@@ -14,11 +14,12 @@ This repository contains a comprehensive solution for multi-model, multi-entity 
   - ARIMA  
   - SARIMAX  
   - Prophet
+ 
 - **Key Features:**
   - Supports both company-level and region-level forecasts.
   - Handles exogenous features: holidays & discounts
-  - Model selection and forecast horizon are user-configurable.
-  - Displays model accuracy (MAPE) for all segments/models.
+  - Model selection and forecast horizon are user selected.
+  - Displays model accuracy (MAPE) for all segments/models for Sales forecasts.
   - Downloadable forecast results.
   - Intuitive Streamlit user interface.
 
@@ -26,13 +27,15 @@ This repository contains a comprehensive solution for multi-model, multi-entity 
 
 ## Data
 
+The raw data contained daily Sales and Orders records of 365 stores for the period from 2018-01-01 to 2019-05-31 i.e. 516 days. The Data was group and aggregated to build pipelines to forecast sales at the company and region levels.  
+
 - **Training Data:** Sales, orders, and exogenous information for the company and each region.
 - **Inference Data:** Future period data (e.g., June–July 2019) for forecasting.
 - **Features Used:**  
   - Sales, Orders  
   - Holiday flags  
   - Discounted Stores  
-  - Time-based features
+  - Engineered Time-based features
 
 ---
 
@@ -55,29 +58,12 @@ This repository contains a comprehensive solution for multi-model, multi-entity 
 
 ---
 
-## Repository Structure
-
-```
-ScalerDSML-ProductSalesForecast/
-├── app.py                  # Main Streamlit application
-├── forecasting.py          # All forecasting logic and model wrappers
-├── requirements.txt        # Python package requirements
-├── data/                   # Training/inference datasets (CSV)
-├── Scaler_DSML_Product_Sales_Forecasting_Analysis_&_Model_Development.ipynb  # Full analysis notebook
-└── README.md               # This file
-```
-
----
-
-## Reference
-
-- **Scaler_DSML_Product_Sales_Forecasting_Analysis_&_Model_Development.ipynb** contains the full data pipeline, EDA, model training, and analysis.
-
-- The Streamlit app is a user-friendly interface for running forecasts and viewing results.
+## Next Version
+- Functions and pipelines will be updated to forecast Sales and Orders at the store level. 
 
 
 ---
 
-## 📬 Contact
+## Contact
 
 For questions or feedback, please open an issue or contact [varunjoshua](https://github.com/varunjoshua).
