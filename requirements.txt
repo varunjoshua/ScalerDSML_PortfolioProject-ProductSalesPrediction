@@ -1,6 +1,10 @@
 streamlit
 pandas
 matplotlib
+seaborn
+numpy
+scipy
+plotly
 xgboost
 scikit-learn
 statsmodels

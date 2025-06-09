@@ -375,7 +375,7 @@ def sarimax_forecast(df_train, m_steps, exog_train, exog_pred,
     exog_pred.index.freq = 'D'
 
     # Fit SARIMAX on full training data
-    model = SARIMAX(df_train[target_col],
+    model = SARIMAX(df_train['target'],
                     order=order,
                     seasonal_order=seasonal_order,
                     exog=exog_train)
