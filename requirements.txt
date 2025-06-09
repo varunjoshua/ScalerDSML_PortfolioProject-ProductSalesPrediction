@@ -9,4 +9,5 @@ xgboost
 scikit-learn
 statsmodels
 prophet
+git+https://github.com/JoaquinAmatRodrigo/skforecast.git
 skforecast>=0.4.3
