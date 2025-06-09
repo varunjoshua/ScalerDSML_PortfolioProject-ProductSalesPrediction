@@ -9,4 +9,4 @@ xgboost
 scikit-learn
 statsmodels
 prophet
-skforecast
+skforecast>=0.4.3
