@@ -39,6 +39,27 @@ ts_data, exog_data = download_entity_data(entity)
 
 #  Step 3: Run Forecast 
 if st.button("Run Forecast"):
+    loading_placeholder = st.empty()
+    with st.spinner("Generating forecasts... This might take a few seconds... (or a few minutes for SARIMAX!)"):
+        loading_placeholder.markdown(
+        """
+        <style>
+        .blinking {
+            animation: blinker 1s linear infinite;
+            color: #2c3e50;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+        </style>
+        <div class="blinking">Generating forecasts...</div>
+        <div>This might take a few seconds... (or a few minutes for SARIMAX!)</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     test_size = m_steps  
 
     if model_choice in ["Linear Regression", "XGBoost"]:
@@ -85,6 +106,8 @@ if st.button("Run Forecast"):
         forecast["Date"] = pd.to_datetime(forecast["Date"])
         forecast = forecast.set_index("Date")
     
+    loading_placeholder.empty()
+
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
