@@ -38,28 +38,17 @@ m_steps = st.slider("Select Forecast Horizon (in days)", min_value=7, max_value=
 ts_data, exog_data = download_entity_data(entity)
 
 #  Step 3: Run Forecast 
-if st.button("Run Forecast"):
-    loading_placeholder = st.empty()
-    with st.spinner("Generating forecasts... This might take a few seconds... (or a few minutes for SARIMAX!)"):
-        loading_placeholder.markdown(
-        """
-        <style>
-        .blinking {
-            animation: blinker 1s linear infinite;
-            color: #2c3e50;
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-        @keyframes blinker {
-            50% { opacity: 0; }
-        }
-        </style>
-        <div class="blinking">Generating forecasts...</div>
-        <div>This might take a few seconds... (or a few minutes for SARIMAX!)</div>
-        """,
-        unsafe_allow_html=True,
-    )
 
+run_forecast = st.button("Run Forecast")
+wait_message = st.empty()
+
+
+if not run_forecast:
+        wait_message.info("Forecasts may take a few seconds... (or a few minutes for SARIMAX!)")
+    
+if run_forecast:
+    wait_message.empty()
+    
     test_size = m_steps  
 
     if model_choice in ["Linear Regression", "XGBoost"]:
@@ -106,7 +95,6 @@ if st.button("Run Forecast"):
         forecast["Date"] = pd.to_datetime(forecast["Date"])
         forecast = forecast.set_index("Date")
     
-    loading_placeholder.empty()
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -182,7 +170,7 @@ if st.button("Run Forecast"):
 )
             else:
                 st.info("Orders forecasts are untested. No Sales MAPE is available for this segment/model.")
-
+    
     # --- Step 5: Show Forecast Table and Download Option ---
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("Forecast Table")
