@@ -13,7 +13,7 @@ import sys
 import os
 
 st.set_page_config(page_title="Sales Forecasting App", layout="centered")
-st.title("📈 Sales Forecasting App")
+st.title("Sales Forecasting App")
 
 from forecasting import (
     recursive_forecast, arima_forecast, sarimax_forecast, prophet_forecast,
@@ -84,28 +84,49 @@ if st.button("Run Forecast"):
         forecast = forecast.rename(columns={col_name: target_choice})
         forecast["Date"] = pd.to_datetime(forecast["Date"])
         forecast = forecast.set_index("Date")
-        
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+
     #  Step 4: Plot Forecast 
+    st.subheader("Forecast Visualization")
+    st.markdown(f"**Model:** {model_choice} | **Target:** {target_choice} | **Entity:** {entity} | **Forecast Horizon:** {m_steps} days")
     fig = plot_model_forecast(
         ts_data.copy(), forecast, model_name=model_choice, inf_label=entity, target_col=target_choice
         )
     st.pyplot(fig)
 
     #  Step 4.1: Display pre-computed MAPE
-
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.subheader("Forecast Report")
     # MAPEs for Prophet
     if model_choice == "Prophet":
         entity_key = entity
         if target_choice == "Sales":
             mape = prophet_mapes.get(entity_key, {}).get('sales_mape')
             if mape is not None:
-                st.info(f"Prophet Test MAPE for {entity} Sales: {mape:.2%}")
+                st.info(f"Test MAPE: {mape:.2%}")
+                st.markdown(
+    f"""
+    - Sales forecasts generated for Prophet model are pre-computed.
+    - The model yielded a best Mean Absolute Percentage Error (MAPE) of {mape:.2%} on the test set when forecasting {entity} {target_choice} over a 61-day horizon.Forecasting with fewer or more steps results in noticeably drop in performance. 
+    - The MAPE is a measure of how accurate the forecast is, with lower values indicating better accuracy.
+    """
+)
+                
             else:
                 st.info("MAPE not available for this selection.")
         elif target_choice == "Orders":
             mape = prophet_mapes.get(entity_key, {}).get('orders_mape')
             if mape is not None:
-                st.info(f"Prophet Test MAPE for {entity} Orders: {mape:.2%}")
+                st.info(f"Test MAPE: {mape:.2%}")
+                st.markdown(
+    f"""
+    - Order forecasts generated for Prophet model are pre-computed.
+    - The model yielded Mean Absolute Percentage Error (MAPE) of {mape:.2%} on the test set when forecasting {entity} {target_choice} over a 61-day horizon.Forecasting with fewer or more steps results in noticeably drop in performance. 
+    - The MAPE is a measure of how accurate the forecast is, with lower values indicating better accuracy.
+    """
+)
             else:
                 st.info("MAPE not available for this selection.")
     else:
@@ -114,22 +135,39 @@ if st.button("Run Forecast"):
         if target_choice == "Sales":
             mape_value = model_mapes.get(key)
             if mape_value:
-                st.info(f"Test MAPE for {model_choice} model on {entity} {target_choice}: {mape_value}")
+                st.info(f"Test MAPE:  {mape_value}")
+                st.markdown(
+    f"""
+    - The {model_choice} model yielded a Mean Absolute Percentage Error (MAPE) of {mape_value} on the test set when forecasting {entity} {target_choice} over a 61-day horizon.
+    - The MAPE is a measure of how accurate the forecast is, with lower values indicating better accuracy.
+    - Parameters that resulted in minimum MAPE during test were used for this forecast.
+    """
+)
             else:
                 st.info("MAPE not available for this selection.")
         elif target_choice == "Orders":
             mape_sales_key = (entity, "Sales", model_choice)
             mape_value = model_mapes.get(mape_sales_key)
             if mape_value:
-                st.info(f"Orders forecasts are untested. Model had a MAPE of {mape_value} on Sales for this segment.")
+                st.info(f"Orders forecasts for {model_choice} model are untested.")
+                st.markdown(
+    f"""
+    - The {model_choice} model yielded a Mean Absolute Percentage Error (MAPE) of {mape_value} on the test set when forecasting {entity} {target_choice} over a 61-day horizon.</li>
+    - The MAPE is a measure of how accurate the forecast is, with lower values indicating better accuracy.</li>
+    """,
+    unsafe_allow_html=True
+)
             else:
                 st.info("Orders forecasts are untested. No Sales MAPE is available for this segment/model.")
 
     # --- Step 5: Show Forecast Table and Download Option ---
-    st.dataframe(forecast)  # Show the forecast table
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.subheader("Forecast Table")
+    st.dataframe(forecast)
 
     csv = forecast.to_csv().encode('utf-8')
     st.download_button("Download Forecast as CSV", data=csv, file_name="forecast.csv", mime="text/csv")
 
-    st.success("Forecasting Complete ✅")
+    st.success("Forecasting Completed")
+
 
