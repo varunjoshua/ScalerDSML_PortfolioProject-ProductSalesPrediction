@@ -38,16 +38,7 @@ m_steps = st.slider("Select Forecast Horizon (in days)", min_value=7, max_value=
 ts_data, exog_data = download_entity_data(entity)
 
 #  Step 3: Run Forecast 
-
-run_forecast = st.button("Run Forecast")
-wait_message = st.empty()
-
-
-if not run_forecast:
-        wait_message.info("Forecasts may take a few seconds... (or a few minutes for SARIMAX!)")
-    
-if run_forecast:
-    wait_message.empty()
+if st.button("Run Forecast"):
     
     test_size = m_steps  
 
